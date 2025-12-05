@@ -113,7 +113,7 @@ class TareaView(tk.Frame):
         self.cb_asignado.grid(row=2, column=5, sticky="ew")
 
         ttk.Label(card_info, text="Asignar Sprint:").grid(row=3, column=0, sticky="w", pady=10)
-        self.entry_sprint_tarea = ttk.Spinbox(card_info, from_=1, to=10, width=5, state="normal")
+        self.entry_sprint_tarea = ttk.Spinbox(card_info, from_=1, to=10, width=5, state="readonly")
         self.entry_sprint_tarea.set(1)
         self.entry_sprint_tarea.grid(row=3, column=1, sticky="w")
 
@@ -180,7 +180,7 @@ class TareaView(tk.Frame):
         return content
 
     def configurar_limite_sprint(self, max_sprint):
-        self.entry_sprint_tarea.config(state="normal", from_=1, to=max_sprint)
+        self.entry_sprint_tarea.config(state="readonly", from_=1, to=max_sprint)
         self.entry_sprint_tarea.set(max_sprint)
 
     def crear_fila_subtarea(self, texto, hecho):
