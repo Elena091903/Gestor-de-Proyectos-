@@ -1,6 +1,6 @@
 
 from bson import ObjectId
-from models.m5_model import SpeedReportModel
+from M5_Reporte.models.m5_model import SpeedReportModel
 
 class SpeedReportController:
 

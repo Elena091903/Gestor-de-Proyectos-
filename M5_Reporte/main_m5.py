@@ -4,8 +4,8 @@ import os
 def main():
     from mongo_con import MongoConnection
     from models.m5_model import SpeedReportModel
-    from controllers.m5_controller import SpeedReportController
-    from views.m5_view import SpeedReportView
+    from M5_Reporte.controllers.m5_controller import SpeedReportController
+    from M5_Reporte.views.m5_view import SpeedReportView
 
     conn = MongoConnection()  
     model = SpeedReportModel(conn)

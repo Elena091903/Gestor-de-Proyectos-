@@ -2,7 +2,7 @@
 from datetime import datetime, date, timedelta
 from collections import defaultdict
 from bson import ObjectId
-from mongo_con import MongoConnection
+from M5_Reporte.mongo_con import MongoConnection
 
 class SpeedReportModel:
 

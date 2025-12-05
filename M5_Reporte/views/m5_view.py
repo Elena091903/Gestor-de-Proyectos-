@@ -4,7 +4,7 @@ from tkinter import ttk, messagebox, font
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime
-from controllers.m5_controller import SpeedReportController
+from M5_Reporte.controllers.m5_controller import SpeedReportController
 import re
 
 # Paleta y tipografías
@@ -27,7 +27,7 @@ class SpeedReportView(tk.Tk):
     Los controles (proyecto + checkbox) se aplican a ambas; hay botón 'Actualizar ambas'.
     """
 
-    def __init__(self, controller: SpeedReportController):
+    def __init__(self, controller):
         super().__init__()
         self.controller = controller
         self.title('Reporte de Velocidad')
