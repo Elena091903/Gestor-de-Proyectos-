@@ -113,7 +113,7 @@ class TareaView(tk.Frame):
         self.cb_asignado.grid(row=2, column=5, sticky="ew")
 
         ttk.Label(card_info, text="Asignar Sprint:").grid(row=3, column=0, sticky="w", pady=10)
-        self.entry_sprint_tarea = ttk.Spinbox(card_info, from_=1, to=10, width=5, state="readonly")
+        self.entry_sprint_tarea = ttk.Spinbox(card_info, from_=1, to=1, width=5, state="readonly")
         self.entry_sprint_tarea.set(1)
         self.entry_sprint_tarea.grid(row=3, column=1, sticky="w")
 
