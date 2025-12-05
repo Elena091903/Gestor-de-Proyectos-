@@ -22,7 +22,7 @@ ACTION_COLORS = {
     None: "#6B7280"
 }
 
-# etiquetas en español para los resúmenes
+# etiquetas para los resúmenes
 ACTION_LABELS_ES = {
     "CREATE_PROJECT": "Proyectos creados",
     "UPDATE_PROJECT": "Proyectos actualizados",
@@ -35,49 +35,41 @@ class HistoryManagerUI(tk.Tk):
     def __init__(self, current_user=None):
         super().__init__()
         self.current_user = current_user or {}
-        self.title("Módulo 4 — Historial y Logs")
+        self.title("Historial y Logs")
         self.configure(bg=C_BODY_BG)
         self.geometry("1200x740")
         self.controller = HistoryController()
 
-        # estado de paginación / vista
-        self.page = 1
-        self.per_page = 40
-        self.view_mode = "table"   # 'table' | 'cards'
-
-        # map proyecto display -> id
+        self.per_page = 10000
+        self.view_mode = "table"   
         self._proj_map = {}
 
         self._build_ui()
-        self._load_filters()   # llena combo de proyectos
+        self._load_filters()
         self.load_entries()
 
     def _build_ui(self):
-        # Header
+        # cabecera
         header = tk.Frame(self, bg=C_HEADER, height=68)
         header.pack(fill="x", side="top")
         header.pack_propagate(False)
         tk.Label(header, text="Historial y Logs", bg=C_HEADER, fg="white", font=("Segoe UI", 16, "bold")).pack(side="left", padx=18)
         tk.Label(header, text=f"{self.current_user.get('usuario','-')} — {self.current_user.get('rol','-')}", bg=C_HEADER, fg="white").pack(side="right", padx=18)
 
-        # Toolbar (filtros)
+        # toolbar (filtros)
         toolbar = tk.Frame(self, bg="white", padx=12, pady=10)
         toolbar.pack(fill="x", side="top")
 
-        # Proyecto: combobox con proyectos (o "Todos los proyectos")
         tk.Label(toolbar, text="Proyecto:", bg="white").pack(side="left", padx=(2,6))
         self.cb_proj = ttk.Combobox(toolbar, values=[], width=36, state="readonly")
         self.cb_proj.pack(side="left", padx=6)
-        # por defecto "Todos los proyectos"
         self.cb_proj.set("Todos los proyectos")
 
-        # Tipo de acción (sin ADD_COMMENT)
         tk.Label(toolbar, text="Acción:", bg="white").pack(side="left", padx=(8,6))
         self.cb_tipo = ttk.Combobox(toolbar, values=["","CREATE_PROJECT","UPDATE_PROJECT","DELETE_PROJECT","CAMBIO_ESTADO"], width=20, state="readonly")
         self.cb_tipo.pack(side="left", padx=6)
         self.cb_tipo.current(0)
 
-        # Fechas con DateEntry
         tk.Label(toolbar, text="Desde:", bg="white").pack(side="left", padx=(10,6))
         self.entry_from = DateEntry(toolbar, width=12, date_pattern="yyyy-mm-dd")
         self.entry_from.pack(side="left", padx=6)
@@ -88,18 +80,17 @@ class HistoryManagerUI(tk.Tk):
         self.entry_to.pack(side="left", padx=6)
         self.entry_to.set_date(datetime.utcnow())
 
-        # Botones: aplicar, exportar, toggle vista
         tk.Button(toolbar, text="Aplicar filtros", bg=C_HEADER, fg="white", command=self.on_apply_filters).pack(side="right", padx=8)
         tk.Button(toolbar, text="Exportar CSV", command=self.on_export_csv).pack(side="right", padx=8)
         self.btn_toggle = tk.Button(toolbar, text="Ver como tarjetas", command=self._toggle_view)
         self.btn_toggle.pack(side="right", padx=8)
 
-        # Resumen (cards con conteos)
+        # resumen con conteos
         self.summary_frame = tk.Frame(self, bg=C_BODY_BG, pady=6)
         self.summary_frame.pack(fill="x", padx=12)
         self._build_summary_cards()
 
-        # Main: izquierda contenido (tabla/tarjetas) y derecha detalle
+        # panel principal: izquierda contenido, derecha detalle
         main_pane = ttk.Panedwindow(self, orient="horizontal")
         main_pane.pack(fill="both", expand=True, padx=12, pady=(6,12))
 
@@ -111,38 +102,28 @@ class HistoryManagerUI(tk.Tk):
         right_container.configure(width=360)
         main_pane.add(right_container, weight=1)
 
-        # Left: area donde se muestra tabla o tarjetas (con scrollbar)
+        # área con scroll donde se colocará la tabla o tarjetas
         self.left_canvas = tk.Canvas(left_container, bg=C_CARD_BG, highlightthickness=0)
         self.left_scroll = ttk.Scrollbar(left_container, orient="vertical", command=self.left_canvas.yview)
         self.left_frame = tk.Frame(self.left_canvas, bg=C_CARD_BG)
         self.left_frame.bind("<Configure>", lambda e: self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all")))
-        self.left_window = self.left_canvas.create_window((0,0), window=self.left_frame, anchor="nw")
+        self.left_canvas.create_window((0,0), window=self.left_frame, anchor="nw")
         self.left_canvas.configure(yscrollcommand=self.left_scroll.set)
         self.left_canvas.pack(side="left", fill="both", expand=True)
         self.left_scroll.pack(side="right", fill="y")
 
-        # Dentro del left_frame, colocaremos la tabla (Treeview) por defecto
         self._build_table_view(self.left_frame)
 
-        # Right: detalle seleccionado (card)
+        # detalle a la derecha
         self.detail_card = tk.Frame(right_container, bg=C_CARD_BG)
         self.detail_card.pack(fill="both", expand=True)
         self._build_detail_card(self.detail_card)
 
-        # Pager
-        pager = tk.Frame(self, bg=C_BODY_BG)
-        pager.pack(fill="x", side="bottom", pady=(0,10))
-        self.lbl_page = tk.Label(pager, text="Página 1", bg=C_BODY_BG)
-        self.lbl_page.pack(side="left", padx=12)
-        tk.Button(pager, text="<< Anterior", command=self.on_prev_page).pack(side="right", padx=6)
-        tk.Button(pager, text="Siguiente >>", command=self.on_next_page).pack(side="right", padx=6)
-
     def _build_summary_cards(self):
-        # limpia
+        # limpiar
         for w in self.summary_frame.winfo_children():
             w.destroy()
 
-        # Tipos que mostramos (sin comentarios)
         types = ["CREATE_PROJECT","UPDATE_PROJECT","CAMBIO_ESTADO","DELETE_PROJECT"]
         for t in types:
             color = ACTION_COLORS.get(t, "#6B7280")
@@ -150,11 +131,9 @@ class HistoryManagerUI(tk.Tk):
             card.pack(side="left", padx=8, pady=4)
             label_text = ACTION_LABELS_ES.get(t, t.replace("_", " "))
             tk.Label(card, text=label_text, bg=C_CARD_BG, fg=C_ACCENT, font=("Segoe UI", 9, "bold")).pack(anchor="w")
-            # intentar obtener conteo desde controller.count, pasando el filtro actual de proyecto/fechas
             cnt = "-"
             try:
                 q = self._build_query_from_ui()
-                # para resumen preguntamos por el tipo y por el proyecto y fechas
                 cnt = self.controller.count(project_id=q.get("project_id"), tipo=t, start_date=q.get("start_date"), end_date=q.get("end_date"))
             except Exception:
                 try:
@@ -164,7 +143,6 @@ class HistoryManagerUI(tk.Tk):
             tk.Label(card, text=str(cnt), bg=C_CARD_BG, fg=color, font=("Segoe UI", 14, "bold")).pack(anchor="w")
 
     def _build_table_view(self, parent):
-        # limpia si ya existe
         for w in parent.winfo_children():
             w.destroy()
         columns = ("fecha","usuario","rol","tipo","campo","valor_ant","valor_nvo")
@@ -187,15 +165,14 @@ class HistoryManagerUI(tk.Tk):
     def _build_detail_card(self, parent):
         for w in parent.winfo_children():
             w.destroy()
-        # Header mini
         hdr = tk.Frame(parent, bg=C_HEADER, height=40)
         hdr.pack(fill="x", side="top")
         hdr.pack_propagate(False)
         tk.Label(hdr, text="Detalle del registro", bg=C_HEADER, fg="white", font=("Segoe UI", 11, "bold")).pack(side="left", padx=10)
-        # Body
+
         body = tk.Frame(parent, bg=C_CARD_BG, padx=10, pady=10)
         body.pack(fill="both", expand=True)
-        # labels (guardamos referencias en self._detail_widgets)
+
         self._detail_widgets = {}
         rows = [
             ("Fecha", "fecha"),
@@ -214,117 +191,142 @@ class HistoryManagerUI(tk.Tk):
             v.grid(row=i, column=1, sticky="nw", pady=(6,0), padx=(10,0))
             self._detail_widgets[key] = v
 
-        # actions
         btns = tk.Frame(parent, bg=C_CARD_BG)
         btns.pack(fill="x", pady=(6,0))
-        tk.Button(btns, text="Refrescar", command=self.load_entries, bg="#E5E7EB").pack(side="left")
-        tk.Button(btns, text="Copiar ID proyecto", command=self._copy_project_id).pack(side="right")
-
-    def _copy_project_id(self):
-        v = self._detail_widgets.get("id_proyecto").cget("text")
-        try:
-            self.clipboard_clear(); self.clipboard_append(v)
-            messagebox.showinfo("Copiado", "ID de proyecto copiado al portapapeles.")
-        except Exception:
-            pass
 
     def _load_filters(self):
-        """
-        Carga la lista de proyectos en el combobox (muestra 'Todos los proyectos' + todos los proyectos).
-        Intenta importar tu modelo de proyectos desde varios lugares (por la estructura de carpetas).
-        """
-        projects = []
-        ProjectModel = None
-        # intenta importaciones posibles (ajusta si tu estructura es distinta)
-        tried = []
-        try:
-            from models.m1_project_model import ProjectModel as PM
-            ProjectModel = PM
-            tried.append("M1_Gestion.models.m1_project_model")
-        except Exception:
-            try:
-                from models.m1_project_model import ProjectModel as PM2
-                ProjectModel = PM2
-                tried.append("models.m1_project_model")
-            except Exception:
-                # no encontrado, dejar lista vacía
-                tried.append("no import")
-
-        if ProjectModel:
-            try:
-                pm = ProjectModel()
-                projects = pm.get_all_projects() or []
-            except Exception:
-                projects = []
-
-        # construir valores para combobox
+        # llenar combobox de proyectos basado en ids únicos de la colección historial
         vals = ["Todos los proyectos"]
         self._proj_map = {"Todos los proyectos": None}
-        for p in projects:
-            try:
-                nid = str(p.get("_id"))
-                name = p.get("nombre") or nid
-                display = f"{name} ({nid[:6]})"
-                vals.append(display)
-                self._proj_map[display] = nid
-            except Exception:
-                continue
-        self.cb_proj['values'] = vals
-        # dejar seleccionado el primero por defecto
-        if vals:
+
+        try:
+            from mongo_con import MongoConnection
+            conn = MongoConnection()
+            hist_coll = conn.get_collection("historial")
+            proj_coll = conn.get_collection("proyectos")
+        except Exception:
+            self.cb_proj['values'] = vals
             try:
                 self.cb_proj.current(0)
             except Exception:
                 self.cb_proj.set(vals[0])
+            return
+
+        try:
+            distinct_ids = hist_coll.distinct("id_proyecto") or []
+        except Exception:
+            distinct_ids = []
+
+        from bson import ObjectId
+        seen = set()
+        for raw in distinct_ids:
+            try:
+                if raw is None:
+                    continue
+                oid = None
+                if isinstance(raw, ObjectId):
+                    oid = raw
+                else:
+                    try:
+                        if isinstance(raw, str) and len(raw) == 24:
+                            oid = ObjectId(raw)
+                        else:
+                            oid = raw
+                    except Exception:
+                        oid = raw
+
+                key = str(oid)
+                if key in seen:
+                    continue
+                seen.add(key)
+
+                name = None
+                try:
+                    if isinstance(oid, ObjectId):
+                        pdoc = proj_coll.find_one({"_id": oid})
+                    else:
+                        pdoc = proj_coll.find_one({"_id": key})
+                    if pdoc:
+                        name = pdoc.get("nombre") or key
+                except Exception:
+                    name = None
+
+                display = f"{name} ({key[:6]})" if name else f"{key[:6]}"
+                vals.append(display)
+                self._proj_map[display] = key
+
+            except Exception:
+                continue
+
+        if len(vals) == 1:
+            try:
+                for p in proj_coll.find().limit(200):
+                    nid = str(p.get("_id"))
+                    display = f"{p.get('nombre', nid)} ({nid[:6]})"
+                    if display not in vals:
+                        vals.append(display)
+                        self._proj_map[display] = nid
+            except Exception:
+                pass
+
+        try:
+            self.cb_proj['values'] = vals
+            self.cb_proj.current(0)
+        except Exception:
+            try:
+                self.cb_proj.set(vals[0])
+            except Exception:
+                pass
 
     def _build_query_from_ui(self):
-        sel = self.cb_proj.get().strip()
-        proj = self._proj_map.get(sel) if sel else None
+        # construir filtros (project_id, tipo, fechas)
+        sel = self.cb_proj.get().strip() if hasattr(self, "cb_proj") else None
+        proj = None
+        if sel:
+            proj = self._proj_map.get(sel)
         tipo = self.cb_tipo.get().strip() or None
+
         start = None; end = None
         try:
             v = self.entry_from.get_date()
             if v:
-                start = datetime.combine(v, datetime.min.time())
+                from datetime import datetime as _dt
+                start = _dt.combine(v, _dt.min.time())
         except Exception:
             start = None
         try:
             v = self.entry_to.get_date()
             if v:
-                end = datetime.combine(v, datetime.max.time())
+                from datetime import datetime as _dt
+                end = _dt.combine(v, _dt.max.time())
         except Exception:
             end = None
+
         return {
             "project_id": proj,
             "tipo": tipo,
             "start_date": start,
             "end_date": end,
-            "page": self.page,
             "per_page": self.per_page
         }
 
     def load_entries(self):
         q = self._build_query_from_ui()
-        entries = []
         try:
             entries = self.controller.list(**q) or []
-        except Exception as e:
-            # fallback si controller no implementa list exactamente
+        except Exception:
             try:
                 entries = self.controller.model.find_by_filters(**q)
             except Exception as ex:
                 messagebox.showerror("Error", f"No se pudieron cargar los registros:\n{ex}")
                 return
 
-        # actualizar resumenes (intentar)
         try:
             self._build_summary_cards()
         except Exception:
             pass
 
-        # dependencia: view_mode
         if self.view_mode == "table":
-            # poblar tree
             try:
                 self.tree.delete(*self.tree.get_children())
             except Exception:
@@ -344,19 +346,14 @@ class HistoryManagerUI(tk.Tk):
                     str(e.get("nuevo_valor") or "-"),
                 )
                 self.tree.insert("", "end", iid=iid, values=vals, tags=(tipo,))
-                # tag styling left blank (platform differences)
             try:
                 self.left_canvas.yview_moveto(0)
             except Exception:
                 pass
         else:
-            # tarjetas
             self._render_cards_view(entries)
 
-        self.lbl_page.config(text=f"Página {self.page}")
-
     def _render_cards_view(self, entries):
-        # limpia left_frame y crea tarjetas en grid 2 columnas
         for w in self.left_frame.winfo_children():
             w.destroy()
         cols = 2
@@ -367,10 +364,8 @@ class HistoryManagerUI(tk.Tk):
             color = ACTION_COLORS.get(tipo, ACTION_COLORS.get(None))
             card = tk.Frame(self.left_frame, bg="white", bd=1, relief="solid", highlightthickness=0, padx=10, pady=8)
             card.grid(row=r, column=c, padx=padx, pady=pady, sticky="nwes")
-            # header color strip
             strip = tk.Frame(card, bg=color, height=6)
             strip.pack(fill="x", side="top", pady=(0,8))
-            # content
             fecha = e.get("fecha")
             fecha_str = fecha.strftime("%Y-%m-%d %H:%M:%S") if hasattr(fecha, "strftime") else str(fecha)
             label_text = ACTION_LABELS_ES.get(tipo, tipo.replace("_"," "))
@@ -380,7 +375,6 @@ class HistoryManagerUI(tk.Tk):
             tk.Label(card, text=f"Campo: {e.get('campo','-')}", bg="white", fg=TEXT_COLOR, font=("Segoe UI", 9)).pack(anchor="w")
             tk.Label(card, text=f"Antes: {str(e.get('valor_anterior','-'))}", bg="white", fg="#374151", wraplength=300, justify="left").pack(anchor="w", pady=(4,0))
             tk.Label(card, text=f"Ahora: {str(e.get('nuevo_valor','-'))}", bg="white", fg="#111827", wraplength=300, justify="left").pack(anchor="w", pady=(2,0))
-            # click handler para seleccionar y llenar detalle
             card.bind("<Button-1>", lambda ev, id_=str(e.get("_id")): self._select_by_id(id_))
             for child in card.winfo_children():
                 child.bind("<Button-1>", lambda ev, id_=str(e.get("_id")): self._select_by_id(id_))
@@ -485,17 +479,7 @@ class HistoryManagerUI(tk.Tk):
         self.load_entries()
 
     def on_apply_filters(self):
-        self.page = 1
         self.load_entries()
-
-    def on_next_page(self):
-        self.page += 1
-        self.load_entries()
-
-    def on_prev_page(self):
-        if self.page > 1:
-            self.page -= 1
-            self.load_entries()
 
     def on_export_csv(self):
         import csv, tkinter.filedialog as fd

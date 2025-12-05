@@ -8,7 +8,7 @@ class HistoryController:
         self.model = HistoryModel()
 
     def insert_entry(self, user_doc, project_id, tipo_de_accion, campo=None, valor_anterior=None, nuevo_valor=None):
-        # user_doc expected {'_id':..., 'usuario':..., 'rol':...} or None
+        # columnas de la colección historial 
         entry = {
             "fecha": datetime.utcnow(),
             "id_usuario": user_doc.get("_id") if user_doc else None,
@@ -23,7 +23,7 @@ class HistoryController:
         return self.model.insert(entry)
 
     def list(self, **filters):
-        # pasa filtros al modelo (project_id, user_id, tipo, start_date, end_date, text_search, page, per_page)
+        # pasa filtros al modelo (project_name, tipo, start_date, end_date)
         return self.model.find_by_filters(**filters)
 
     def count(self, **filters):

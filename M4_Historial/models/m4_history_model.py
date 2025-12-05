@@ -7,7 +7,7 @@ class HistoryModel:
     def __init__(self):
         conn = MongoConnection()
         self.collection = conn.get_collection("historial")
-        # aseguramos índices
+        # índices
         self._ensure_indexes()
 
     def _ensure_indexes(self):
@@ -75,7 +75,7 @@ class HistoryModel:
 
     def count_by_filters(self, **kwargs):
         q = {}
-        # reuse similar logic as find_by_filters (can refactor), but simple version:
+        # logica para conteo de filtros aplicados
         if kwargs.get("project_id"):
             q["id_proyecto"] = self._to_objectid_if_hex(kwargs["project_id"])
         if kwargs.get("user_id"):
