@@ -22,7 +22,7 @@ class TareaController:
         self.view.cb_filtro_tarea.set('')
         self.view.btn_save.config(text="GUARDAR NUEVA TAREA")
         
-        # Restaurar info del proyecto seleccionado
+        # Restaurar info proyecto seleccionado
         nombre = self.view.cb_filtro_proy.get()
         proyecto = self.mapa_proyectos.get(nombre)
         if proyecto:
@@ -39,7 +39,6 @@ class TareaController:
             self.view.lbl_proy_nombre.config(text=proyecto['nombre'])
             self.view.lbl_proy_desc.config(text=proyecto.get('descripcion', 'Sin descripción'))
             
-            # Configurar Sprint
             self.current_project_sprint = proyecto.get('sprint_actual', 1)
             self.view.configurar_limite_sprint(self.current_project_sprint)
             
