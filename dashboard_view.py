@@ -152,7 +152,7 @@ class DashboardView(tk.Toplevel):
     def open_module(self, module_id: int):
         # Apertura de los módulos del sistema
         mod_name = MODULES.get(module_id, f'Módulo {module_id}')
-        folder_prefix_map = {1: 'M1_Gestion', 2: 'M2_Tablero', 3: 'M3_Creacion', 4: 'M4_Historial', 5: 'M5_Reporte'}
+        folder_prefix_map = {1: 'M1_Gestion', 2: 'M2_Tablero', 3: 'M3_CREACION', 4: 'M4_Historial', 5: 'M5_Reporte'}
         folder_name = folder_prefix_map.get(module_id)
 
         if not folder_name:
