@@ -120,15 +120,21 @@ class HistoryManagerUI(tk.Tk):
         self._build_detail_card(self.detail_card)
 
     def _build_summary_cards(self):
-        # limpiar
+        # limpia
         for w in self.summary_frame.winfo_children():
             w.destroy()
+
+        # contenedor interior centrado
+        summary_inner = tk.Frame(self.summary_frame, bg=C_BODY_BG)
+        summary_inner.pack(anchor="center", pady=6)
 
         types = ["CREATE_PROJECT","UPDATE_PROJECT","CAMBIO_ESTADO","DELETE_PROJECT"]
         for t in types:
             color = ACTION_COLORS.get(t, "#6B7280")
-            card = tk.Frame(self.summary_frame, bg=C_CARD_BG, bd=0, highlightthickness=1, highlightbackground="#E5E7EB", padx=12, pady=8)
-            card.pack(side="left", padx=8, pady=4)
+            card = tk.Frame(summary_inner, bg=C_CARD_BG, bd=0, highlightthickness=1,
+                            highlightbackground="#E5E7EB", padx=14, pady=10)
+            card.pack(side="left", padx=10, pady=4)
+
             label_text = ACTION_LABELS_ES.get(t, t.replace("_", " "))
             tk.Label(card, text=label_text, bg=C_CARD_BG, fg=C_ACCENT, font=("Segoe UI", 9, "bold")).pack(anchor="w")
             cnt = "-"
@@ -140,7 +146,9 @@ class HistoryManagerUI(tk.Tk):
                     cnt = self.controller.model.collection.count_documents({"tipo_de_accion": t})
                 except Exception:
                     cnt = "-"
+
             tk.Label(card, text=str(cnt), bg=C_CARD_BG, fg=color, font=("Segoe UI", 14, "bold")).pack(anchor="w")
+
 
     def _build_table_view(self, parent):
         for w in parent.winfo_children():
